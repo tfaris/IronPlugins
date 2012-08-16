@@ -18,7 +18,7 @@ namespace IronPlugins.Plugin
 
         /// <summary>
         /// Get a globally-unique identifier created when this
-        /// StringPlugin was created.
+        /// Plugin was created.
         /// </summary>
         public Guid Guid
         {
