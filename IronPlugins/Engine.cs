@@ -25,5 +25,16 @@ namespace IronPlugins
                 return _engine;                
             }
         }
+
+        /// <summary>
+        /// Returns a type that can be used in scripts for the specified generic type
+        /// (currently only PythonType).
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public static object GetScriptType<T>()
+        {
+            return IronPython.Runtime.Types.DynamicHelpers.GetPythonTypeFromType(typeof(T));
+        }
     }
 }

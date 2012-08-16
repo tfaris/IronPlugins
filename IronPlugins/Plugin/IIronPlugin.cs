@@ -31,6 +31,11 @@ namespace IronPlugins.Plugin
         /// <param name="vars"></param>
         void AddContextVariables(params KeyValuePair<string, object>[] vars);
         /// <summary>
+        /// Register a type that can be accessed by, and potentially inherited in, the plugin.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        void RegisterType<T>();
+        /// <summary>
         /// Execute the plugin, placing any existing variables onto the current context and
         /// returning values if available.
         /// </summary>

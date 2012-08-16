@@ -89,6 +89,16 @@ namespace IronPlugins.Plugin
         }
 
         /// <summary>
+        /// Register a type that can be accessed by, and potentially inherited in, the plugin.
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public void RegisterType<T>()
+        {
+            Type t = typeof(T);
+            AddContextVariables(new KeyValuePair<string,object>(t.Name,Engine.GetScriptType<T>()));
+        }
+
+        /// <summary>
         /// Execute the plugin, placing any existing variables onto the current context and
         /// returning values if available.
         /// </summary>
@@ -149,7 +159,7 @@ namespace IronPlugins.Plugin
                     {
                         result = Engine.ScriptEngine.Operations.Invoke(val, args);
                     }
-                    else if (val is IronPython.Runtime.Types.PythonType)
+                    else if (val is IronPython.Runtime.Types.PythonType || val is IronPython.Runtime.Types.OldClass)
                     {
                         result = Engine.ScriptEngine.Operations.Invoke(val, args);
                     }
