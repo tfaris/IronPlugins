@@ -14,7 +14,7 @@ namespace IronPlugins.Plugin
         Microsoft.Scripting.Hosting.ScriptSource _source;
         Microsoft.Scripting.Hosting.CompiledCode _compiled;
         Dictionary<string, dynamic> _contextVariables;
-        Guid _guid = new Guid();
+        Guid _guid = Guid.NewGuid();
 
         /// <summary>
         /// Get a globally-unique identifier created when this
