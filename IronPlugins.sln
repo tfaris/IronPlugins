@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPlugins", "IronPlugins.csproj", "{0696C506-A6AA-476B-99DD-2C8BF1CD963A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IronPlugins", "IronPlugins\IronPlugins.csproj", "{0696C506-A6AA-476B-99DD-2C8BF1CD963A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "..\Tests\Tests.csproj", "{43F8D4A4-A133-445E-B5D3-221E5AA63D10}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "Tests\Tests.csproj", "{43F8D4A4-A133-445E-B5D3-221E5AA63D10}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
