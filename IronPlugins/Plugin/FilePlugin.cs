@@ -5,6 +5,9 @@ using System.Text;
 
 namespace IronPlugins.Plugin
 {
+    /// <summary>
+    /// Represents a plugin created from a file.
+    /// </summary>
     public class FilePlugin : Plugin
     {
         string _scriptPath;

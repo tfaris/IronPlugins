@@ -15,6 +15,7 @@ namespace IronPlugins.Plugin
         Microsoft.Scripting.Hosting.CompiledCode _compiled;
         Dictionary<string, dynamic> _contextVariables;
         Guid _guid = Guid.NewGuid();
+        string _hash;
 
         /// <summary>
         /// Get a globally-unique identifier created when this
@@ -23,6 +24,14 @@ namespace IronPlugins.Plugin
         public Guid Guid
         {
             get { return _guid; }
+        }
+
+        /// <summary>
+        /// Get the ScriptSource of this plugin.
+        /// </summary>
+        protected Microsoft.Scripting.Hosting.ScriptSource Source
+        {
+            get { return _source; }
         }
 
         /// <summary>
@@ -49,7 +58,7 @@ namespace IronPlugins.Plugin
         {
             _contextVariables = new Dictionary<string, dynamic>();
         }
-        
+
         /// <summary>
         /// Create and return the script source to be used for the plugin.
         /// </summary>
@@ -71,6 +80,7 @@ namespace IronPlugins.Plugin
         {
             if (_source == null)
             {
+                _hash = null;
                 _source = InitializeSource();
                 _compiled = null; // If source is null, we definitely need to compile (even if _compiled exists somehow)
             }
@@ -95,7 +105,7 @@ namespace IronPlugins.Plugin
         public void RegisterType<T>()
         {
             Type t = typeof(T);
-            AddContextVariables(new KeyValuePair<string,object>(t.Name,Engine.GetScriptType<T>()));
+            AddContextVariables(new KeyValuePair<string, object>(t.Name, Engine.GetScriptType<T>()));
         }
 
         /// <summary>
@@ -117,41 +127,60 @@ namespace IronPlugins.Plugin
         /// <returns></returns>
         public dynamic RunPlugin(Microsoft.Scripting.Hosting.ScriptScope scope)
         {
-            CheckInitialized();
-            foreach (KeyValuePair<string, dynamic> variable in _contextVariables)
+            dynamic retVal = null;
+            try
             {
-                // If we try to set a variable to null, we get an execption, but casting
-                // null to System.Object solves that.
-                scope.SetVariable(variable.Key, (Object)variable.Value);
+                CheckInitialized();
+                foreach (KeyValuePair<string, dynamic> variable in _contextVariables)
+                {
+                    // If we try to set a variable to null, we get an execption, but casting
+                    // null to System.Object solves that.
+                    scope.SetVariable(variable.Key, (Object)variable.Value);
+                }
+                retVal = _compiled.Execute(scope);
+                foreach (string scopeVar in scope.GetVariableNames())
+                    _contextVariables[scopeVar] = scope.GetVariable(scopeVar);
             }
-            dynamic retVal = _compiled.Execute(scope);
-            foreach (string scopeVar in scope.GetVariableNames())
-                _contextVariables[scopeVar] = scope.GetVariable(scopeVar);
+            catch (Exception ex)
+            {
+                if (Engine.IsIPYEngine(Engine.ScriptEngine))
+                {
+                    throw new Plugins.PythonPluginException(ex);
+                }
+                else throw ex;                     
+            }
             return retVal;
         }
 
         /// <summary>
-        /// Compute a hash of the compiled script code.
+        /// Compute a hash of the script code.
         /// </summary>
         /// <returns></returns>
-        public string ComputeHash()
+        public virtual string ComputeHash()
         {
-            return _compiled.GetHashCode().ToString();
+            if (_hash == null)
+            {
+                if (Source != null)
+                {
+                    string source = Source.GetCode();
+                    Encoding sourceEncoding = Source.DetectEncoding() ?? Encoding.UTF8;
+                    byte[] bytes = sourceEncoding.GetBytes(source);
+                    using (System.Security.Cryptography.HashAlgorithm provider = new System.Security.Cryptography.SHA1CryptoServiceProvider())
+                    {
+                        _hash = BitConverter.ToString(provider.ComputeHash(bytes)).Replace("-", string.Empty).ToLower();
+                    }
+                }
+                else
+                    _hash = string.Empty;
+            }
+            return _hash;
         }
 
-        #region Dynamics
-
-        /// <summary>
-        /// Dynamically invoke a context member.
-        /// </summary>
-        /// <param name="binder"></param>
-        /// <param name="args"></param>
-        /// <param name="result"></param>
-        /// <returns></returns>
-        public override bool TryInvokeMember(System.Dynamic.InvokeMemberBinder binder, object[] args, out object result)
+        public dynamic Invoke(string name, params object[] args)
         {
+            dynamic result = null;
             dynamic val;
-            if (_contextVariables.TryGetValue(binder.Name, out val))
+            if (_contextVariables.TryGetValue(name, out val))
             {
                 if (Engine.ScriptEngine.Operations.IsCallable(val))
                 {
@@ -165,7 +194,7 @@ namespace IronPlugins.Plugin
                     }
                     else
                     {
-                        result = Engine.ScriptEngine.Operations.InvokeMember(val, binder.Name, args);
+                        result = Engine.ScriptEngine.Operations.InvokeMember(val, name, args);
                     }
                 }
                 else
@@ -173,6 +202,25 @@ namespace IronPlugins.Plugin
                     result = val;
                 }
             }
+            if (result == null)
+            {
+                throw new System.MissingMemberException(string.Format("No member named \"{0}\" found in plugin context {1}.",name,this.Guid));
+            }
+            return result;
+        }
+
+        #region Dynamics
+
+        /// <summary>
+        /// Dynamically invoke a context member.
+        /// </summary>
+        /// <param name="binder"></param>
+        /// <param name="args"></param>
+        /// <param name="result"></param>
+        /// <returns></returns>
+        public override bool TryInvokeMember(System.Dynamic.InvokeMemberBinder binder, object[] args, out object result)
+        {
+            result = Invoke(binder.Name, args);
             return base.TryInvokeMember(binder, args, out result);
         }
 

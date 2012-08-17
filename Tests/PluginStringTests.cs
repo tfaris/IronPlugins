@@ -28,7 +28,7 @@ namespace Tests
 
         [Test]
         public void SimpleReturnValueTest()
-        {
+        {         
             Assert.IsTrue(CreateStringPlugin("5").RunPlugin() == 5);
         }
 

@@ -36,5 +36,42 @@ namespace IronPlugins
         {
             return IronPython.Runtime.Types.DynamicHelpers.GetPythonTypeFromType(typeof(T));
         }
+
+        /// <summary>
+        /// Add a library search path to the engine.
+        /// </summary>
+        /// <param name="path"></param>
+        public static void AddSearchPath(string path)
+        {
+            ICollection<string> paths = ScriptEngine.GetSearchPaths();
+            paths.Add(path);
+            ScriptEngine.SetSearchPaths(paths);
+        }
+
+        /// <summary>
+        /// Add a range of search paths to the engine.
+        /// </summary>
+        /// <param name="paths"></param>
+        public static void AddSearchPaths(IEnumerable<string> paths)
+        {
+            ICollection<string> exPaths = ScriptEngine.GetSearchPaths();
+            foreach (string p in paths)
+                exPaths.Add(p);
+            ScriptEngine.SetSearchPaths(exPaths);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="engine"></param>
+        /// <returns></returns>
+        public static bool IsIPYEngine(Microsoft.Scripting.Hosting.ScriptEngine engine)
+        {
+            var ipyNames =
+                from name in engine.Setup.Names
+                where name.Contains("Python")
+                select name;
+            return ipyNames.Count() > 0;
+        }
     }
 }
