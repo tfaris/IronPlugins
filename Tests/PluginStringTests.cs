@@ -18,7 +18,7 @@ namespace Tests
         /// <param name="pluginCode"></param>
         /// <param name="args"></param>
         /// <returns></returns>
-        public dynamic CreateStringPlugin(string pluginCode,params KeyValuePair<string,object>[] args)
+        public dynamic CreateStringPlugin(string pluginCode,params IronPlugins.Context.Variable[] args)
         {
             dynamic plugin = new IronPlugins.Plugin.StringPlugin(pluginCode);
             plugin.AddContextVariables(args);
@@ -57,7 +57,7 @@ SOME_CONFIGURATION_LIST = [1,2,3]
         [Test]
         public void VariableMath()
         {
-            dynamic plug = CreateStringPlugin("x = y + 1", new KeyValuePair<string,object>("y",954));
+            dynamic plug = CreateStringPlugin("x = y + 1", new IronPlugins.Context.Variable("y",954));
             //plug.y = 954;
             //plug.RunPlugin();
             Assert.IsTrue(plug.x == 955);

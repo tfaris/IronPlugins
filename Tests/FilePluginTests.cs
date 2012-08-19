@@ -9,12 +9,12 @@ namespace Tests
     [TestFixture]
     public class FilePluginTests
     {
-        dynamic pg;
+        static dynamic pg;
         /// <summary>
         /// Create a file plugin from our test script.
         /// </summary>
         /// <returns></returns>
-        public dynamic CreateFilePlugin()
+        public static dynamic CreateFilePlugin()
         {
             if (pg == null)
             {
@@ -57,7 +57,7 @@ namespace Tests
         {
             // Calling the Invoke method with a member that does not exist in the context
             // should raise a MissingMemberException.
-            IronPlugins.Plugin.Plugin plugin = CreateFilePlugin();
+            IronPlugins.Plugin.PluginBase plugin = CreateFilePlugin();
             Assert.Throws<System.MissingMemberException>(() => plugin.Invoke("does_not_exist"));
         }
 
@@ -68,6 +68,25 @@ namespace Tests
             dynamic plugin = CreateFilePlugin();            
             dynamic inherited = plugin.MyInheritedType();
             Assert.IsTrue(inherited.DoMath(5) == 25);
+        }
+
+        [Test]
+        public void SpecToString()
+        {
+            // A plugin can override ToString by making sure there is an
+            // attribute/function titled ToString on the context
+            dynamic plugin = CreateFilePlugin();
+            Assert.IsTrue(plugin.ToString() == "From the plugin!");
+        }
+
+        [Test]
+        public void SpecGuid()
+        {
+            // A plugin can override Guid by making sure there is an
+            // attribute/function titled Guid on the context that returns
+            // either a System.Guid, string, or byte array.
+            dynamic plugin = CreateFilePlugin();
+            Assert.IsTrue(plugin.Guid == new System.Guid("852bb7e1-1839-4a19-a9f0-78c1f6e29053"));
         }
     }
 

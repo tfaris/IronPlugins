@@ -8,7 +8,7 @@ namespace IronPlugins.Plugin
     /// <summary>
     /// Represents a plugin script created from an in-memory string.
     /// </summary>
-    public class StringPlugin : Plugin
+    public class StringPlugin : PluginBase
     {        
         string _code;
 
@@ -17,6 +17,17 @@ namespace IronPlugins.Plugin
         /// </summary>
         /// <param name="code"></param>
         public StringPlugin(string code) : base()
+        {
+            this._code = code;
+        }
+
+        /// <summary>
+        /// Create an instance of StringPlugin from the specified code with
+        /// the specified Guid.
+        /// </summary>
+        /// <param name="code"></param>
+        public StringPlugin(string code,Guid pluginGuid)
+            : base(pluginGuid)
         {
             this._code = code;
         }

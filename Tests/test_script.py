@@ -8,3 +8,9 @@ class SimpleClass:
 class MyInheritedType(InheritMe):
     def DoMath(self,input):
         return input ** 2
+		
+    
+def ToString():
+    return "From the plugin!"
+    
+Guid = "852bb7e1-1839-4a19-a9f0-78c1f6e29053"

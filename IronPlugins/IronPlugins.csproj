@@ -53,10 +53,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Context\Variable.cs" />
+    <Compile Include="Context\VariableList.cs" />
     <Compile Include="Engine.cs" />
+    <Compile Include="ErrorHandler.cs" />
+    <Compile Include="PluginManager.cs" />
+    <Compile Include="PluginReloadErrorEventArgs.cs" />
+    <Compile Include="PluginReloadEventArgs.cs" />
     <Compile Include="Plugin\FilePlugin.cs" />
     <Compile Include="Plugin\IIronPlugin.cs" />
-    <Compile Include="Plugin\Plugin.cs" />
+    <Compile Include="Plugin\PluginBase.cs" />
+    <Compile Include="Plugin\PluginCollection.cs" />
     <Compile Include="Plugin\PythonPluginException.cs" />
     <Compile Include="Plugin\StringPlugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

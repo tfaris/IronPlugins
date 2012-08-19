@@ -9,7 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace IronPlugins.Plugins
+namespace IronPlugins.Plugin
 {
     /// <summary>
     /// Represents a runtime error raised by a python plugin.
