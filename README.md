@@ -8,7 +8,7 @@ IronPlugins can be created from a string:
 dynamic plugin = StringPlugin(
 @"def add(a,b):
     return a+b");
-Console.WriteLine)plugin.add(10,55));
+Console.WriteLine(plugin.add(10,55));
 
 //Output
 //65
@@ -44,8 +44,9 @@ void _pluginManager_PluginReloaded(object sender, PluginReloadEventArgs args)
 }
 ```
 
-PluginManager also has a global context, which can be accessed through plugins using the ```__mgr__``` attribute.
-This attribute can be accessed in an indexed-dictionary fashion. We can get and set.
+PluginManager also has a global context, which can be automatically accessed through any plugin being
+managed using the ```__mgr__``` attribute. This attribute can be accessed in an indexed-dictionary fashion. 
+We can get and set.
 ```
 // my_plugin.py
 app_data = __mgr__["sample_data"]
