@@ -19,7 +19,7 @@ namespace PluggableApp
         public Form1()
         {
             InitializeComponent();
-            _pluginManager = new PluginManager();
+            _pluginManager = new PluginManager(System.Threading.SynchronizationContext.Current);
             _pluginManager.PluginReloaded += new PluginManager.PluginReloadedEventHandler(_pluginManager_PluginReloaded);
             _pluginManager.PluginReloadedError += new PluginManager.PluginReloadErrorEventHandler(_pluginManager_PluginReloadedError);
         }
@@ -31,10 +31,7 @@ namespace PluggableApp
         /// <param name="args"></param>
         void _pluginManager_PluginReloaded(object sender, PluginReloadEventArgs args)
         {
-            Invoke((MethodInvoker)delegate
-            {
-                textBox1.AppendText(string.Format("{0} was reloaded.\r\n", args.Plugin));
-            });
+            textBox1.AppendText(string.Format("{0} was reloaded.\r\n", args.Plugin));
         }
 
         /// <summary>
@@ -44,12 +41,8 @@ namespace PluggableApp
         /// <param name="args"></param>
         void _pluginManager_PluginReloadedError(object sender, PluginReloadErrorEventArgs args)
         {
-            Invoke((MethodInvoker)
-                delegate
-                {
-                    string message = string.Format("Error while reloading {0}:\r\n{1}", args.Plugin.ToString(), args.Error.Message);
-                    MessageBox.Show(message);
-                });            
+            string message = string.Format("Error while reloading {0}:\r\n{1}", args.Plugin.ToString(), args.Error.Message);
+            MessageBox.Show(message);
         }
 
         private void buttonAddPlug_Click(object sender, EventArgs e)
@@ -97,18 +90,25 @@ namespace PluggableApp
         {
             if (e.ColumnIndex == colRun.Index)
             {
-                DataGridViewRow row = dataGridView1.Rows[e.RowIndex];
-                IIronPlugin plugin = (IIronPlugin)row.Tag;
-                plugin.RunPlugin();
-                // Display a list of variables now in the plugin's context
-                IronPlugins.Context.VariableList variables = plugin.GetContextVariables();
-                string variableList = "Variables on context:\r\n**************************************************\r\n";
-                foreach (IronPlugins.Context.Variable var in variables)
+                try
                 {
-                    string varString = string.Format("{0} : {1}\r\n", var.Name, var.Value);
-                    variableList += varString;
+                    DataGridViewRow row = dataGridView1.Rows[e.RowIndex];
+                    IIronPlugin plugin = (IIronPlugin)row.Tag;
+                    plugin.RunPlugin();
+                    // Display a list of variables now in the plugin's context
+                    IronPlugins.Context.VariableList variables = plugin.GetContextVariables();
+                    string variableList = "Variables on context:\r\n**************************************************\r\n";
+                    foreach (IronPlugins.Context.Variable var in variables)
+                    {
+                        string varString = string.Format("{0} : {1}\r\n", var.Name, var.Value);
+                        variableList += varString;
+                    }
+                    MessageBox.Show(variableList);
                 }
-                MessageBox.Show(variableList);
+                catch (Exception ex)
+                {
+                    MessageBox.Show(new IronPlugins.Plugin.PythonPluginException(ex).Message);
+                }
             }
             else if (e.ColumnIndex == colRemPlugin.Index)
             {

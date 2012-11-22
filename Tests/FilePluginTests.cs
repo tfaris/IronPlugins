@@ -33,6 +33,13 @@ namespace Tests
         }
 
         [Test]
+        public void ArbitraryArgumentList()
+        {
+            dynamic plugin = CreateFilePlugin();
+            Assert.IsTrue(plugin.add2(1, 2, 3, 4, 5) == 15);
+        }
+
+        [Test]
         public void SimpleOldTypeClass()
         {
             // Plugin scripts should be able to specify classes. IronPython supports old style and new style

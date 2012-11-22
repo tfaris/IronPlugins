@@ -8,7 +8,9 @@ class SimpleClass:
 class MyInheritedType(InheritMe):
     def DoMath(self,input):
         return input ** 2
-		
+
+def add2(*args):
+    return sum(args) 		
     
 def ToString():
     return "From the plugin!"

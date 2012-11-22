@@ -10,12 +10,14 @@ namespace IronPlugins
     /// <summary>
     /// Represents a collection of plugins coupled with various management-related tasks.
     /// </summary>
-    public class PluginManager : IDisposable
+    public class PluginManager : IronPython.Runtime.PythonDictionary, IDisposable
     {
         PluginCollection _plugins;
         Dictionary<string, FileSystemWatcher> _watchers;
         Dictionary<string, DateTime> _lastRead;
         Dictionary<string, dynamic> _globalContext;
+        System.Threading.SynchronizationContext _reloadContext;
+        TimeSpan _minReloadTime = new TimeSpan(0, 0, 1);
         bool _monitorFiles = true;
 
         /// <summary>
@@ -48,29 +50,25 @@ namespace IronPlugins
         }
 
         /// <summary>
+        /// Get or set the minimum amount of time that must pass between file
+        /// changes before the manager reloads a plugin. File systems raise multiple
+        /// events for file changes, and some systems may have different speeds.
+        /// </summary>
+        public TimeSpan MinimumReloadDifference
+        {
+            get { return _minReloadTime; }
+            set
+            {
+                _minReloadTime = value;
+            }
+        }
+
+        /// <summary>
         /// Get the collection of plugins managed by this PluginManager.
         /// </summary>
         public PluginCollection Plugins
         {
             get { return _plugins; }
-        }
-
-        /// <summary>
-        /// Access the global context of the manager. These variables are accessible by
-        /// all plugins being managed.
-        /// </summary>
-        /// <param name="varName"></param>
-        /// <returns></returns>
-        public dynamic this[string varName]
-        {
-            get
-            {
-                return _globalContext[varName];
-            }
-            set
-            {
-                _globalContext[varName] = value;
-            }
         }
 
         /// <summary>
@@ -85,14 +83,24 @@ namespace IronPlugins
         }
 
         /// <summary>
+        /// Create an instance of PluginManager that will execute plugin reloads
+        /// on the specified context.
+        /// </summary>
+        /// <param name="reloadContext"></param>
+        public PluginManager(System.Threading.SynchronizationContext reloadContext)
+            : this()
+        {
+            _reloadContext = reloadContext;
+        }
+
+        /// <summary>
         /// Add the specified plugin to this manager.
         /// </summary>
         /// <param name="plugin"></param>
         public PluginCollection.AddResult AddPlugin(IIronPlugin plugin)
         {
-            AddSelfToPluginContext(plugin);
             // Initialize the plugin so we have access to the source
-            plugin.RunPlugin();
+            RunPlugin(plugin, false);
             PluginCollection.AddResult result = _plugins.AddPlugin(plugin);
             if (result != PluginCollection.AddResult.NotAdded)
             {
@@ -221,22 +229,78 @@ namespace IronPlugins
         /// <param name="plugin"></param>
         private void ReloadPlugin(IIronPlugin plugin)
         {
+            RunPlugin(plugin, true);
+        }
+
+        /// <summary>
+        /// Run the specified plugin on the current thread, or on the
+        /// synchronized context if it was specified.
+        /// </summary>
+        /// <param name="plugin">The plugin to reload.</param>
+        /// <param name="reload">Optionally reload the plugin before running.</param>
+        private void RunPlugin(IIronPlugin plugin, bool reload)
+        {
             try
             {
-                plugin.ReloadPlugin();
-                AddSelfToPluginContext(plugin);
-                plugin.RunPlugin();
-
-                OnPluginReloaded(new PluginReloadEventArgs(plugin));
+                if (_reloadContext == null)
+                {
+                    Reload(new object[] { plugin, reload, false });
+                }
+                else
+                {
+                    _reloadContext.Send(
+                        new System.Threading.SendOrPostCallback(Reload),
+                        new object[] { plugin, reload, true });
+                }
             }
             catch (Exception e)
             {
                 if (PluginReloadedError != null)
                 {
-                    OnPluginReloadError(new PluginReloadErrorEventArgs(plugin, e));
+                    PluginReloadErrorEventArgs args = new PluginReloadErrorEventArgs(plugin, e);
+                    if (_reloadContext == null)
+                        OnPluginReloadError(args);
+                    else
+                        _reloadContext.Send(
+                                new System.Threading.SendOrPostCallback(delegate(object data)
+                        {
+                            OnPluginReloadError(args);
+                        }), null);
+
                 }
                 else throw e;
             }
+        }
+
+        /// <summary>
+        /// Reloads and run the plugin on the current thread, or on the
+        /// synchronized context if it was specified.
+        /// </summary>
+        /// <param name="data"></param>
+        private void Reload(object data)
+        {
+            object[] arr = (object[])data;
+            IIronPlugin plugin = (IIronPlugin)arr[0];
+            bool reload = (bool)arr[1],
+                 surpressRunError = (bool)arr[2];
+
+            if (reload)
+                plugin.ReloadPlugin();
+            AddSelfToPluginContext(plugin);
+            try
+            {
+                plugin.RunPlugin();
+            }
+            catch (Exception e)
+            {
+                if (!surpressRunError)
+                    throw;
+                else
+                    OnPluginReloadError(new PluginReloadErrorEventArgs(plugin, e));
+            }
+
+            if (reload)
+                OnPluginReloaded(new PluginReloadEventArgs(plugin));
         }
 
         /// <summary>
@@ -303,15 +367,18 @@ namespace IronPlugins
 
                     if (lastWriteTime != lastReadTime || !checkTime)
                     {
-                        _lastRead[e.FullPath] = lastWriteTime;
-
-                        List<IIronPlugin> plugins = GetPluginsForPath(e.FullPath);
-                        if (plugins.Count > 0)
+                        if (lastWriteTime.Subtract(lastReadTime) > MinimumReloadDifference)
                         {
-                            System.Threading.Thread.Sleep(100);
-                            foreach (IIronPlugin plugin in plugins)
+                            _lastRead[e.FullPath] = lastWriteTime;
+
+                            List<IIronPlugin> plugins = GetPluginsForPath(e.FullPath);
+                            if (plugins.Count > 0)
                             {
-                                ReloadPlugin(plugin);
+                                System.Threading.Thread.Sleep(100);
+                                foreach (IIronPlugin plugin in plugins)
+                                {
+                                    ReloadPlugin(plugin);
+                                }
                             }
                         }
                     }

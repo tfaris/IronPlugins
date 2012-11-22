@@ -39,6 +39,16 @@ namespace IronPlugins.Plugin
         }
 
         /// <summary>
+        /// Get the plugin at the specified index.
+        /// </summary>
+        /// <param name="index"></param>
+        /// <returns></returns>
+        public IIronPlugin this[int index]
+        {
+            get { return _list[index]; }
+        }
+
+        /// <summary>
         /// Create a default instance of PluginCollection.
         /// </summary>
         public PluginCollection()
